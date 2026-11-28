@@ -55,9 +55,7 @@ public abstract class StackBulkOperationHandler : IBulkOperationHandler
             .ToList();
 
         if (inScope.Count > 0)
-        {
             await ApplyAsync(task, inScope);
-        }
 
         int failed = ids.Count - inScope.Count;
         return new BulkBatchResult(inScope.Count, failed, failed > 0 ? $"{failed:N0} stacks were not found." : null);

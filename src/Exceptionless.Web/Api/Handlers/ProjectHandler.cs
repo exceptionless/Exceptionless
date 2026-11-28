@@ -524,9 +524,7 @@ public class ProjectHandler(
             return Result.NotFound("Environment not found.");
 
         if (message.Changes.Notify is { } notify && environment.Notify != notify)
-        {
             await repository.SetEnvironmentNotifyAsync(project, environment.Name, notify);
-        }
 
         return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
@@ -540,9 +538,7 @@ public class ProjectHandler(
         // Removing a name never touches events. It only changes how new events are treated.
         string? name = ProjectEnvironment.NormalizeName(message.Name);
         if (name is not null && project.FindEnvironment(name) is not null)
-        {
             await repository.RemoveEnvironmentAsync(project, name);
-        }
 
         return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }
@@ -558,9 +554,7 @@ public class ProjectHandler(
         await repository.SetEnvironmentSettingsAsync(project, changes.DiscardUnlistedEnvironments, changes.DiscardEventsWithoutEnvironment, changes.NotifyOtherEnvironments);
 
         if (stoppedDiscardingWithoutEnvironment)
-        {
             await discardedEnvironmentService.RemoveAsync(project.Id, null);
-        }
 
         return await GetEnvironmentSettingsAsync(message.Id, message.Context);
     }

@@ -289,14 +289,10 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     public static void EnsureComplete(ShardStatistics? shards, bool? timedOut, string operation)
     {
         if (timedOut is true)
-        {
             throw new DocumentException($"The search timed out while {operation}; the result may be incomplete.");
-        }
 
         if (shards is not null && shards.Failed > 0)
-        {
             throw new DocumentException($"{shards.Failed} of {shards.Total} shards failed while {operation}; the result may be incomplete.");
-        }
     }
 
     // The cursor has the same format as Foundatio's search after token (base64 of the JSON array of sort values), so a task that
@@ -311,9 +307,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
     {
         var values = new List<FieldValue>();
         foreach (var element in System.Text.Json.JsonSerializer.Deserialize<System.Text.Json.JsonElement[]>(Convert.FromBase64String(cursor))!)
-        {
             values.Add(element.ValueKind is System.Text.Json.JsonValueKind.Number ? FieldValue.Long(element.GetInt64()) : FieldValue.String(element.GetString()!));
-        }
 
         return values;
     }

@@ -34,9 +34,7 @@ public class StackBulkSelectionResolverTests : IntegrationTestsBase
             // The first stack has several events, which must not make it appear more than once.
             d.Event().TestProject().Date(now.AddHours(-1)).Create(2);
             for (int i = 0; i < 4; i++)
-            {
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
-            }
         });
         var task = NewFilterTask("");
         var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);
@@ -58,9 +56,7 @@ public class StackBulkSelectionResolverTests : IntegrationTestsBase
         var (stacks, _) = await CreateDataAsync(d =>
         {
             for (int i = 0; i < 5; i++)
-            {
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
-            }
         });
         var ordered = stacks.Select(s => s.Id).Order(StringComparer.Ordinal).ToArray();
         var task = NewFilterTask("");

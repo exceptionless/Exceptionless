@@ -74,9 +74,7 @@ public class QueueNotificationAction : EventPipelineActionBase
         foreach (var hook in webHooks.Documents)
         {
             if (!ShouldCallWebHook(hook, ctx, isNew, isRegression))
-            {
                 continue;
-            }
 
             var context = new WebHookDataContext(hook, ctx.Organization, ctx.Project, ctx.Stack, ctx.Event, isNew, isRegression);
             var notification = new WebHookNotification
@@ -146,13 +144,9 @@ public class QueueNotificationAction : EventPipelineActionBase
 
         bool claimed = await _stackRepository.TryClaimNotificationAsync(ctx.Stack, kind);
         if (kind is PendingStackNotification.New)
-        {
             ctx.Stack.IsNewNotificationPending = false;
-        }
         else
-        {
             ctx.Stack.IsRegressionNotificationPending = false;
-        }
 
         return claimed;
     }

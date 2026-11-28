@@ -296,9 +296,7 @@ ctx._source.updated_utc = params.updatedUtc;";
     public async Task SoftDeleteAsync(IReadOnlyCollection<Stack> stacks)
     {
         foreach (var stack in stacks)
-        {
             await PatchStackAsync(stack, new PartialPatch(new { is_deleted = true, updated_utc = _timeProvider.GetUtcNow().UtcDateTime }));
-        }
     }
 
     private async Task PatchStackAsync(Stack stack, IPatchOperation operation)

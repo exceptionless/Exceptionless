@@ -131,9 +131,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
 
                 var page = await GetPageAsync(task, resolver, pinnedSelection, context.CancellationToken);
                 if (page.Ids.Count is 0)
-                {
                     break;
-                }
 
                 // The user who started the task is authorized once, when it is created. Each batch re-checks the scope
                 // (organization and project) but not the user: someone removed from the organization mid-run still finishes
@@ -197,9 +195,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
                 current.Bulk!.RetryCount++;
                 current.Message = current.Bulk!.RetryCount >= _options.MaxTransientFailures ? "The operation stopped because of repeated errors." : "Retrying after a temporary error.";
                 if (current.Bulk!.RetryCount >= _options.MaxTransientFailures)
-                {
                     current.Finish(BackgroundTaskStatus.Failed, current.Message, UtcNow);
-                }
 
                 return true;
             });

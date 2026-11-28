@@ -205,17 +205,11 @@ if (ctx._source.environments != null && ctx._source.environments.removeIf(enviro
 
         var changes = new Dictionary<string, object>(4);
         if (discardUnlistedEnvironments is { } discardUnlisted)
-        {
             changes["discard_unlisted_environments"] = discardUnlisted;
-        }
         if (discardEventsWithoutEnvironment is { } discardWithout)
-        {
             changes["discard_events_without_environment"] = discardWithout;
-        }
         if (notifyOtherEnvironments is { } notifyOther)
-        {
             changes["notify_other_environments"] = notifyOther;
-        }
 
         if (changes.Count is 0)
             return Task.FromResult(false);

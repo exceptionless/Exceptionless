@@ -92,9 +92,7 @@ public partial class BulkOperationEndpointTests
         var (stacks, _) = await CreateDataAsync(d =>
         {
             for (int i = 0; i < 5; i++)
-            {
                 d.Event().TestProject().Status(StackStatus.Open).Date(now.AddMinutes(-i - 1)).Create(1);
-            }
 
             d.Event().TestProject().Status(StackStatus.Open).Date(now.AddDays(-20));
             d.Event().TestProject().Status(StackStatus.Fixed).Date(now.AddHours(-1));
@@ -327,9 +325,7 @@ public partial class BulkOperationEndpointTests
 
         // Act
         foreach (var request in requests)
-        {
             await SendRequestAsync(r => r.Post().AsTestOrganizationUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeUnprocessableEntity());
-        }
 
         // Assert
         Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));

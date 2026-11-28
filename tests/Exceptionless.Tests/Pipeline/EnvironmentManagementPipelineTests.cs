@@ -654,9 +654,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         ev.Tags = ["late"];
         var context = new EventContext(ev, await GetOrganizationAsync(), project);
         foreach (var item in dev.Stack.SignatureInfo)
-        {
             context.StackSignatureData[item.Key] = item.Value;
-        }
 
         // Act
         await action.ProcessBatchAsync([context]);
@@ -684,9 +682,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         {
             var stack = await load;
             if (stack is not null)
-            {
                 await AfterLoaded(stack);
-            }
 
             return stack;
         }
@@ -736,9 +732,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         var ev = NewEvent(environment, source);
         ev.SetVersion(version);
         if (critical)
-        {
             ev.Tags!.Add(Event.KnownTags.Critical);
-        }
 
         var context = await _pipeline.RunAsync(ev, await GetOrganizationAsync(), project);
         await RefreshDataAsync();

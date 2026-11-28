@@ -31,14 +31,10 @@ public class CheckEventEnvironmentAction : EventPipelineActionBase
         {
             // Heartbeats and session ends never carry an environment. They only keep sessions alive and are never stored as events.
             if (ctx.Event.Environment is null && (ctx.Event.IsSessionHeartbeat() || ctx.Event.IsSessionEnd()))
-            {
                 continue;
-            }
 
             if (!project.ShouldDiscardEnvironment(ctx.Event.Environment))
-            {
                 continue;
-            }
 
             ctx.IsDiscarded = true;
             ctx.IsCancelled = true;

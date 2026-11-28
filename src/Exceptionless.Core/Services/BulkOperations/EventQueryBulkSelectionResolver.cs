@@ -98,9 +98,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
     {
         var (appFilter, check) = await GetAppFilterAsync(task);
         if (!check.IsOk)
-        {
             throw new BulkSelectionRejectedException(check);
-        }
 
         if (appFilter is null || pinnedState is null)
             return new BulkSelectionPage([], null);
@@ -110,14 +108,10 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
             .FilterExpression(pinned.EventFilter);
 
         if (pinned.StackIds.Length > 0)
-        {
             query.Stack(pinned.StackIds);
-        }
 
         if (pinned.ExcludedStackIds.Length > 0)
-        {
             query.ExcludeStack(pinned.ExcludedStackIds);
-        }
 
         // Paging only needs the next ids; the total was counted once when the task was created.
         return await FindPageAsync(query, cursor, size);
@@ -151,9 +145,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
 
         // The event date is chosen by the client, so an old-dated event can still arrive after the task was created.
         if (selection.UtcCreatedBefore.HasValue)
-        {
             query.DateRange(null, selection.UtcCreatedBefore, (PersistentEvent e) => e.CreatedUtc);
-        }
 
         return query;
     }

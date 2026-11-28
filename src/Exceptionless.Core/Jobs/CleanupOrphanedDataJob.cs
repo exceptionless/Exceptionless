@@ -266,6 +266,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key.ToString());
                         continue;
                     }
+
                     projectId = parts[0];
                     signature = parts[1];
 

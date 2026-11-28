@@ -841,6 +841,7 @@ public sealed partial class ExceptionlessMcpTools
                 stack.DateFixed = null;
                 await _stackRepository.SaveAsync(stack, o => o.ImmediateConsistency());
             }
+
             return McpResponse<McpStackUpdateResult>.Success(new McpStackUpdateResult(
                 ToStackResult(stack),
                 changed,

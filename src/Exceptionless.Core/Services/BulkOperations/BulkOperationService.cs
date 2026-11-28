@@ -94,9 +94,7 @@ public class BulkOperationService
 
         await _taskService.AddAsync(task);
         if (pinnedSelection is not null)
-        {
             await _cache.SetAsync(BackgroundTaskService.GetPinnedSelectionCacheKey(task.Id), pinnedSelection, BackgroundTaskService.TaskLifetime);
-        }
 
         await _taskService.EnqueueAsync(task, new BulkOperationWorkItem
         {

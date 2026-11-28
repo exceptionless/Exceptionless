@@ -61,9 +61,7 @@ public class DiscardedEnvironmentServiceTests : TestWithLoggingBase
         // Arrange
         var names = Enumerable.Range(0, DiscardedEnvironmentService.MaximumNamesPerProject + 10).Select(i => $"env-{i}").ToList();
         foreach (string name in names)
-        {
             await _service.RecordAsync(ProjectId, [name]);
-        }
 
         // Act
         await _service.RecordAsync(ProjectId, ["ENV-0", "env-0"]);

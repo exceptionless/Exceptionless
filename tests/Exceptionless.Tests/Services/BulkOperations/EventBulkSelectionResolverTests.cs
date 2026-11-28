@@ -58,9 +58,7 @@ public class EventBulkSelectionResolverTests : IntegrationTestsBase
         var (_, events) = await CreateDataAsync(d =>
         {
             for (int i = 0; i < 5; i++)
-            {
                 d.Event().TestProject().Date(now.AddMinutes(-i - 1));
-            }
         });
         var task = NewFilterTask("");
         var preparation = await _resolver.PrepareAsync(task, TestCancellationToken);

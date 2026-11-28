@@ -72,6 +72,7 @@ public sealed class FixDuplicateStacks : MigrationBase
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key);
                         continue;
                     }
+
                     projectId = parts[0];
                     signature = parts[1];
 
