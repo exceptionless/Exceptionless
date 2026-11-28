@@ -23,15 +23,17 @@ public record DiscardedEnvironment
     public DateTime LastSeenUtc { get; init; }
 }
 
-/// <summary>
-/// The names that recently had events discarded, plus how many events came from names that could not be listed individually.
-/// </summary>
-public record DiscardedEnvironmentSummary
+public record ProjectDiscardedEnvironments
 {
+    /// <summary>
+    /// The number of days that discarded environment names are remembered.
+    /// </summary>
+    public int RetentionDays { get; init; }
+
     public IReadOnlyCollection<DiscardedEnvironment> Environments { get; init; } = [];
 
     /// <summary>
-    /// Events within the retention window from names beyond the per-project limit.
+    /// Events from names beyond the per-project limit, which are counted but not listed individually.
     /// </summary>
     public long OtherEvents { get; init; }
 

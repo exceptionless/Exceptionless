@@ -176,9 +176,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
 
         // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
-        bool isSingleEvent = events.Count == 1;
+        bool isSingleEvent = events.Count is 1;
 
-        // Discard any events over the plan limit.
+        // A post belongs to one project, and all its events should come from the same environment.
+        // The quota is applied before filtering by environment. With one slot left, [dev, prod] is trimmed to [dev].
+        // If the project discards dev, neither event is saved and the slot goes unused.
         if (eventsToProcess < events.Count)
         {
             int discarded = events.Count - eventsToProcess;

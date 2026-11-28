@@ -2,7 +2,6 @@
 using System.Diagnostics;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using System.Text.RegularExpressions;
 using Exceptionless.Core.Extensions;
 using Exceptionless.Core.Serialization;
 using MiniValidation;
@@ -10,7 +9,7 @@ using MiniValidation;
 namespace Exceptionless.Core.Models;
 
 [DebuggerDisplay("Type: {Type}, Date: {Date}, Message: {Message}, Value: {Value}, Count: {Count}")]
-public partial class Event : IData, IJsonOnDeserialized
+public class Event : IData, IJsonOnDeserialized
 {
     private string? _environment;
 
@@ -32,11 +31,21 @@ public partial class Event : IData, IJsonOnDeserialized
     public static string? NormalizeEnvironment(string? value)
     {
         string? name = value?.Trim();
-        return name is not null && EnvironmentNameRegex().IsMatch(name) ? name : null;
-    }
+        if (name is not { Length: > 0 and <= 64 } || !Char.IsAsciiLetterOrDigit(name[0]))
+        {
+            return null;
+        }
 
-    [GeneratedRegex(@"^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\z", RegexOptions.CultureInvariant)]
-    private static partial Regex EnvironmentNameRegex();
+        foreach (char character in name.AsSpan(1))
+        {
+            if (!Char.IsAsciiLetterOrDigit(character) && character is not ('.' or '_' or '-'))
+            {
+                return null;
+            }
+        }
+
+        return name;
+    }
 
     /// <summary>
     /// The event type (ie. error, log message, feature usage). Check <see cref="KnownTypes">Event.KnownTypes</see> for standard event types.

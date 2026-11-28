@@ -50,8 +50,10 @@ public class DiscardedEnvironmentService
                 : (String.IsNullOrEmpty(environment) ? null : environment, 1);
         }
 
-        if (groups.Count == 0)
+        if (groups.Count is 0)
+        {
             return;
+        }
 
         string namesKey = GetNamesKey(projectId);
         var tracked = await _cache.GetListAsync<string>(namesKey);
@@ -81,7 +83,9 @@ public class DiscardedEnvironmentService
         }
 
         if (otherEvents > 0)
+        {
             await RecordOtherAsync(projectId, otherBuckets, otherEvents, day);
+        }
     }
 
     private async Task RecordOtherAsync(string projectId, List<string> buckets, int events, string day)
@@ -94,7 +98,9 @@ public class DiscardedEnvironmentService
 
         var tasks = new List<Task> { _cache.IncrementAsync(GetCountKey(projectId, OtherBucket, day), events, _counterRetention) };
         if (newBuckets.Count > 0)
+        {
             tasks.Add(_cache.ListAddAsync(otherNamesKey, newBuckets, _retention));
+        }
 
         await Task.WhenAll(tasks);
     }
@@ -102,7 +108,7 @@ public class DiscardedEnvironmentService
     /// <summary>
     /// Gets the discarded names, most discarded first, and the events from names that were not tracked.
     /// </summary>
-    public async Task<DiscardedEnvironmentSummary> GetAsync(string projectId)
+    public async Task<ProjectDiscardedEnvironments> GetAsync(string projectId)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
@@ -117,8 +123,9 @@ public class DiscardedEnvironmentService
         var tracked = await _cache.GetListAsync<string>(GetNamesKey(projectId));
         var environments = tracked.HasValue && tracked.Value.Count > 0 ? await GetTrackedAsync(projectId, tracked.Value, days) : [];
 
-        return new DiscardedEnvironmentSummary
+        return new ProjectDiscardedEnvironments
         {
+            RetentionDays = DiscardedEnvironmentService.RetentionDays,
             Environments = environments,
             OtherEvents = otherEvents,
             OtherNames = otherNameCount,
@@ -139,9 +146,11 @@ public class DiscardedEnvironmentService
         {
             long count = days.Sum(day => counts.TryGetValue(GetCountKey(projectId, bucket, day), out var value) && value.HasValue ? value.Value : 0);
             if (count <= 0)
+            {
                 continue;
+            }
 
-            bool isUnspecified = bucket == UnspecifiedBucket;
+            bool isUnspecified = bucket is UnspecifiedBucket;
             string? name = null;
             if (!isUnspecified)
             {
