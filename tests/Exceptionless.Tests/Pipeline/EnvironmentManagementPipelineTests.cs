@@ -229,7 +229,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
     {
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
-            return targetMethod!.Name is nameof(IQueue<EventNotification>.EnqueueAsync)
+            return String.Equals(targetMethod!.Name, nameof(IQueue<EventNotification>.EnqueueAsync), StringComparison.Ordinal)
                 ? Task.FromException<string>(new InvalidOperationException("The queue is unavailable."))
                 : throw new NotSupportedException(targetMethod.Name);
         }
@@ -675,7 +675,7 @@ public sealed class EnvironmentManagementPipelineTests : IntegrationTestsBase
         protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
         {
             object? result = targetMethod!.Invoke(Inner, args);
-            return targetMethod.Name is nameof(IStackRepository.GetStackBySignatureHashAsync) ? LoadAsync((Task<Stack?>)result!) : result;
+            return String.Equals(targetMethod.Name, nameof(IStackRepository.GetStackBySignatureHashAsync), StringComparison.Ordinal) ? LoadAsync((Task<Stack?>)result!) : result;
         }
 
         private async Task<Stack?> LoadAsync(Task<Stack?> load)
