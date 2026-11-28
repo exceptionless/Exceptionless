@@ -245,9 +245,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
     {
         int size = Math.Max(1, _options.BatchSize);
         if (String.Equals(task.Bulk!.Cursor, ExhaustedCursor, StringComparison.Ordinal))
-        {
             return new BulkSelectionPage([], null);
-        }
 
         if (task.Bulk!.Selection.Kind is not BulkOperationSelectionKind.Ids)
             return await resolver.GetPageAsync(task, pinnedSelection, task.Bulk!.Cursor, size, cancellationToken);

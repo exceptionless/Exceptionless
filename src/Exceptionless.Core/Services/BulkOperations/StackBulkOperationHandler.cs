@@ -31,14 +31,10 @@ public abstract class StackBulkOperationHandler : IBulkOperationHandler
     {
         // Same rule as the stack endpoints: any user of the organization (or a global admin) may change its stacks.
         if (!request.Actor.CanAccessOrganization(request.Organization.Id))
-        {
             return Task.FromResult(BulkOperationCheckResult.Denied("Organization not found."));
-        }
 
         if (request.Project is not null && !String.Equals(request.Project.OrganizationId, request.Organization.Id, StringComparison.Ordinal))
-        {
             return Task.FromResult(BulkOperationCheckResult.Denied("Project not found."));
-        }
 
         return Task.FromResult(BulkOperationCheckResult.Ok);
     }

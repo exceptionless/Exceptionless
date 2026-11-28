@@ -210,15 +210,11 @@ public class StackBulkSelectionResolverTests : IntegrationTestsBase
         {
             var page = await _resolver.GetPageAsync(task, pinnedState, cursor, size, TestCancellationToken);
             if (page.Ids.Count is 0)
-            {
                 return pages;
-            }
 
             pages.Add(page.Ids.ToList());
             if (page.NextCursor is null)
-            {
                 return pages;
-            }
 
             cursor = page.NextCursor;
         }

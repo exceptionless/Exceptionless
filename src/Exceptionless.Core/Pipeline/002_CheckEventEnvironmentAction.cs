@@ -24,9 +24,7 @@ public class CheckEventEnvironmentAction : EventPipelineActionBase
     {
         var project = contexts.FirstOrDefault()?.Project;
         if (project is null || !project.DiscardUnlistedEnvironments)
-        {
             return;
-        }
 
         var discarded = new List<EventContext>();
         foreach (var ctx in contexts)
@@ -48,9 +46,7 @@ public class CheckEventEnvironmentAction : EventPipelineActionBase
         }
 
         if (discarded.Count is 0)
-        {
             return;
-        }
 
         _logger.LogInformation("Discarding {Count} events from environments that are not listed on the project", discarded.Count);
 

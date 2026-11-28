@@ -22,14 +22,10 @@ public class ChangeStacksStatusBulkOperationHandler(IStackRepository stackReposi
     {
         var unknown = RejectUnknownParameters(request, StatusParameter);
         if (!unknown.IsOk)
-        {
             return Task.FromResult(unknown);
-        }
 
         if (!request.Parameters.TryGetValue(StatusParameter, out string? value) || !_statuses.TryGetValue(value, out var status) || !StackActionService.CanChangeStatusTo(status))
-        {
             return Task.FromResult(BulkOperationCheckResult.Invalid($"parameters.{StatusParameter}", "The status must be open, ignored or discarded."));
-        }
 
         return Task.FromResult(Ok);
     }

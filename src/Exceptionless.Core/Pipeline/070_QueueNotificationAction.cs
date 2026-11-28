@@ -42,9 +42,7 @@ public class QueueNotificationAction : EventPipelineActionBase
 
         // Every notification for every channel (email, Slack, web hooks) requires a notifying environment.
         if (!ctx.Project.ShouldNotifyForEnvironment(ctx.Event.Environment))
-        {
             return;
-        }
 
         bool isNew = await IsNewForNotificationAsync(ctx);
         // An immediate regression reserves the same per-cycle key a pending claim uses, so a concurrent batch that marks the regression
@@ -110,9 +108,7 @@ public class QueueNotificationAction : EventPipelineActionBase
     private async Task<bool> IsNewForNotificationAsync(EventContext ctx)
     {
         if (ctx.IsNew)
-        {
             return true;
-        }
 
         return await ClaimPendingAsync(ctx, PendingStackNotification.New);
     }
@@ -146,9 +142,7 @@ public class QueueNotificationAction : EventPipelineActionBase
     {
         bool isPending = kind is PendingStackNotification.New ? ctx.Stack!.IsNewNotificationPending : ctx.Stack!.IsRegressionNotificationPending;
         if (!isPending)
-        {
             return false;
-        }
 
         bool claimed = await _stackRepository.TryClaimNotificationAsync(ctx.Stack, kind);
         if (kind is PendingStackNotification.New)
@@ -189,22 +183,16 @@ public class QueueNotificationAction : EventPipelineActionBase
             return false;
 
         if (isNew && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewError))
-        {
             return true;
-        }
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalError))
             return true;
 
         if (isRegression && hook.EventTypes.Contains(WebHook.KnownEventTypes.StackRegression))
-        {
             return true;
-        }
 
         if (isNew && hook.EventTypes.Contains(WebHook.KnownEventTypes.NewEvent))
-        {
             return true;
-        }
 
         if (ctx.Event.IsCritical() && hook.EventTypes.Contains(WebHook.KnownEventTypes.CriticalEvent))
             return true;
@@ -218,22 +206,16 @@ public class QueueNotificationAction : EventPipelineActionBase
             return false;
 
         if (isNew && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewErrors))
-        {
             return true;
-        }
 
         if (ctx.Event.IsCritical() && ctx.Event.IsError() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalErrors))
             return true;
 
         if (isRegression && ctx.Project.NotificationSettings.Any(n => n.Value.ReportEventRegressions))
-        {
             return true;
-        }
 
         if (isNew && ctx.Project.NotificationSettings.Any(n => n.Value.ReportNewEvents))
-        {
             return true;
-        }
 
         if (ctx.Event.IsCritical() && ctx.Project.NotificationSettings.Any(n => n.Value.ReportCriticalEvents))
             return true;

@@ -63,9 +63,7 @@ public class StackHandler(
     public async Task<Result> Handle(MarkStacksFixed message)
     {
         if (!stackActions.TryParseVersion(message.Version, out var semanticVersion))
-        {
             return Result.BadRequest("Invalid semantic version");
-        }
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
@@ -98,9 +96,7 @@ public class StackHandler(
     {
         string? snoozeError = stackActions.ValidateSnooze(message.SnoozeUntilUtc);
         if (snoozeError is not null)
-        {
             return Result.BadRequest(snoozeError);
-        }
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)
@@ -205,9 +201,7 @@ public class StackHandler(
     public async Task<Result> Handle(ChangeStacksStatus message)
     {
         if (!StackActionService.CanChangeStatusTo(message.Status))
-        {
             return Result.BadRequest("Can't set stack status to regressed or snoozed.");
-        }
 
         var stacks = await GetModelsAsync(message.Ids.FromDelimitedString(), message.Context, false);
         if (stacks.Count is 0)

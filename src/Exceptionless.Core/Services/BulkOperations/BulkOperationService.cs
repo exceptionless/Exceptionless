@@ -158,9 +158,7 @@ public class BulkOperationService
                 var retired = await _taskService.UpdateAsync(existing.Id, current =>
                 {
                     if (!current.IsActive || !BackgroundTaskService.IsStale(current, utcNow))
-                    {
                         return false;
-                    }
 
                     current.Finish(BackgroundTaskStatus.Failed, "Stopped because it made no progress for two hours.", utcNow);
                     return true;

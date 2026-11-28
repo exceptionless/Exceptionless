@@ -32,9 +32,7 @@ public class StackActionService
     {
         semanticVersion = null;
         if (String.IsNullOrEmpty(version))
-        {
             return true;
-        }
 
         semanticVersion = _semanticVersionParser.Parse(version);
         return semanticVersion is not null;
@@ -76,9 +74,7 @@ public class StackActionService
     {
         var changed = stacks.Where(s => s.Status != status).ToList();
         if (changed.Count is 0)
-        {
             return;
-        }
 
         foreach (var stack in changed)
         {

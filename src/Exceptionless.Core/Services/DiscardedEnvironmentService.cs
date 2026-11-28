@@ -51,9 +51,7 @@ public class DiscardedEnvironmentService
         }
 
         if (groups.Count is 0)
-        {
             return;
-        }
 
         string namesKey = GetNamesKey(projectId);
         var tracked = await _cache.GetListAsync<string>(namesKey);

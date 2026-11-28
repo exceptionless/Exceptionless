@@ -168,9 +168,7 @@ if (ctx._source.{field} == true) {{
         {
             bool claimed = await PatchAsync(stack.Id, new ScriptPatch(script.TrimScript()), o => o.Notifications(false));
             if (!claimed)
-            {
                 return false;
-            }
 
             await InvalidateStackCacheAsync(stack);
 

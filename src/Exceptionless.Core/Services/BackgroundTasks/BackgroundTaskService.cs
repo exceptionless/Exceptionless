@@ -257,9 +257,7 @@ public class BackgroundTaskService
 
         bool isStale = IsStale(task, utcNow);
         if (!task.CanCancel && !isStale)
-        {
             return BackgroundTaskCancelResult.NotCancellable(task);
-        }
 
         bool requestCancellation = false;
         var updated = await UpdateAsync(id, current =>
@@ -271,9 +269,7 @@ public class BackgroundTaskService
             var currentUtcNow = _timeProvider.GetUtcNow().UtcDateTime;
             bool isStaleNow = IsStale(current, currentUtcNow);
             if (!current.CanCancel && !isStaleNow)
-            {
                 return false;
-            }
 
             requestCancellation = true;
             bool isRunningNow = current.Status is BackgroundTaskStatus.Running && !isStaleNow;

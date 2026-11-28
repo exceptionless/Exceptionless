@@ -47,14 +47,10 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
     {
         var result = await _validator.ValidateQueryAsync(selection.Filter);
         if (!result.IsValid)
-        {
             return BulkOperationCheckResult.Invalid("selection.filter", result.Message ?? "Invalid filter.");
-        }
 
         if (result.UsesPremiumFeatures && !organization.HasPremiumFeatures)
-        {
             return BulkOperationCheckResult.PlanLimit(PremiumSearchUpgradeMessage);
-        }
 
         return BulkOperationCheckResult.Ok;
     }
@@ -63,14 +59,10 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
     {
         var (appFilter, check) = await GetAppFilterAsync(task);
         if (!check.IsOk)
-        {
             return BulkSelectionPreparation.Rejected(check);
-        }
 
         if (appFilter is null)
-        {
             return new BulkSelectionPreparation(BulkOperationCheckResult.Ok);
-        }
 
         // Relative dates are pinned to the creation time, like the outer time window. Freeze before counting so the count
         // and every page share one anchor, even when preparation runs after the selected day.
@@ -111,9 +103,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
         }
 
         if (appFilter is null || pinnedState is null)
-        {
             return new BulkSelectionPage([], null);
-        }
 
         var pinned = _serializer.Deserialize<PinnedEventSelection>(pinnedState) ?? new PinnedEventSelection();
         var query = ApplyScope(new RepositoryQuery<PersistentEvent>(), appFilter, task.Bulk!.Selection)
@@ -172,9 +162,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
     {
         var organization = await _organizationRepository.GetByIdAsync(task.OrganizationId, o => o.Cache());
         if (organization is null)
-        {
             return (null, BulkOperationCheckResult.Ok);
-        }
 
         var validation = await _validator.ValidateQueryAsync(task.Bulk!.Selection.Filter);
         AppFilter appFilter;
@@ -182,9 +170,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
         {
             var project = await _projectRepository.GetByIdAsync(task.ProjectId, o => o.Cache());
             if (project is null || !String.Equals(project.OrganizationId, organization.Id, StringComparison.Ordinal))
-            {
                 return (null, BulkOperationCheckResult.Ok);
-            }
 
             appFilter = new AppFilter(project, organization);
         }
@@ -196,9 +182,7 @@ public abstract class EventQueryBulkSelectionResolver : IBulkSelectionResolver
         // AppFilter turns an unavailable premium search into no matches. Report the plan change explicitly so the worker
         // cannot mistake it for an exhausted selection and record the deletion as completed.
         if (validation.UsesPremiumFeatures && !organization.HasPremiumFeatures)
-        {
             return (null, BulkOperationCheckResult.PlanLimit(PremiumSearchUpgradeMessage));
-        }
 
         appFilter.UsesPremiumFeatures = validation.UsesPremiumFeatures;
         return (appFilter, BulkOperationCheckResult.Ok);
