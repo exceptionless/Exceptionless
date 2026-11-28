@@ -1,3 +1,5 @@
+using Elastic.Clients.Elasticsearch;
+using Exceptionless.Core;
 using Exceptionless.Core.Configuration;
 using Exceptionless.Core.Jobs;
 using Exceptionless.Core.Jobs.WorkItemHandlers;
@@ -6,13 +8,16 @@ using Exceptionless.Core.Models.BackgroundTasks;
 using Exceptionless.Core.Models.BulkOperations;
 using Exceptionless.Core.Models.WorkItems;
 using Exceptionless.Core.Repositories;
+using Exceptionless.Core.Repositories.Configuration;
 using Exceptionless.Core.Services.BulkOperations;
 using Exceptionless.Core.Utility;
+using Exceptionless.Core.Validation;
 using Exceptionless.Tests.Extensions;
 using Exceptionless.Web.Models;
 using Foundatio.Jobs;
 using Foundatio.Lock;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Exceptions;
 using Foundatio.Utility;
 using Xunit;
 
@@ -21,6 +26,65 @@ namespace Exceptionless.Tests.Api.Endpoints;
 public partial class BulkOperationEndpointTests
 {
     [Fact]
+    public async Task Execute_PartialStackSearch_RetriesThePageBeforeFixingAnyStacks()
+    {
+        // Arrange
+        var now = TimeProvider.GetUtcNow();
+        var (stacks, _) = await CreateDataAsync(d =>
+        {
+            d.Event().TestProject().Message("first stack").Date(now.AddMinutes(-2));
+            d.Event().TestProject().Message("second stack").Date(now.AddMinutes(-1));
+        });
+        var created = await CreateOperationAsync(StackFilterRequest("stacks.mark-fixed", ""));
+        await using var searchNode = WebApplication.CreateBuilder().Build();
+        searchNode.Urls.Add("http://127.0.0.1:0");
+        searchNode.MapMethods("/", [HttpMethods.Head], (HttpResponse response) =>
+        {
+            response.Headers["X-Elastic-Product"] = "Elasticsearch";
+            return TypedResults.Ok();
+        });
+        searchNode.MapPost("/{index}/_search", (HttpResponse response) =>
+        {
+            response.Headers["X-Elastic-Product"] = "Elasticsearch";
+            return TypedResults.Json(new
+            {
+                took = 1,
+                timed_out = false,
+                _shards = new { total = 2, successful = 1, skipped = 0, failed = 1 },
+                hits = new { hits = Array.Empty<object>() },
+                aggregations = new Dictionary<string, object>
+                {
+                    ["composite#stack_ids"] = new { buckets = new[] { new { key = new { stack_id = stacks[0].Id }, doc_count = 1 } } }
+                }
+            });
+        });
+        await searchNode.StartAsync(TestCancellationToken);
+        var services = GetService<IServiceProvider>();
+        var repository = ActivatorUtilities.CreateInstance<SearchNodeEventRepository>(services, new Uri(searchNode.Urls.Single()));
+        var partialResolver = ActivatorUtilities.CreateInstance<StackBulkSelectionResolver>(services, repository);
+
+        // Act
+        await RunStackOperationAsync(created.Id, 2, partialResolver);
+        var interrupted = await _taskService.GetAsync(created.Id);
+        var afterPartialPage = await GetStacksAsync(stacks);
+        await RunStackOperationAsync(created.Id, 2);
+        var finished = await GetOperationAsync(created.Id);
+        var afterRetry = await GetStacksAsync(stacks);
+
+        // Assert
+        Assert.NotNull(interrupted);
+        Assert.Equal(BackgroundTaskStatus.Running, interrupted.Status);
+        Assert.Equal(0, interrupted.Processed);
+        Assert.Null(interrupted.Bulk!.Cursor);
+        Assert.Equal(1, interrupted.Bulk.RetryCount);
+        Assert.All(afterPartialPage.Values, stack => Assert.Equal(StackStatus.Open, stack.Status));
+        Assert.Contains(Log.LogEntries, entry => entry.Exception is DocumentException error && error.Message.Contains("1 of 2 shards failed", StringComparison.Ordinal));
+        Assert.Equal(BackgroundTaskStatus.Completed, finished.Status);
+        Assert.Equal(2, finished.Succeeded);
+        Assert.All(afterRetry.Values, stack => Assert.Equal(StackStatus.Fixed, stack.Status));
+    }
+
+    [Fact]
     public async Task Create_StackFilterSelection_AppliesTheActionToEveryMatchingStackAcrossBatches()
     {
         // Arrange
@@ -28,13 +92,15 @@ public partial class BulkOperationEndpointTests
         var (stacks, _) = await CreateDataAsync(d =>
         {
             for (int i = 0; i < 5; i++)
+            {
                 d.Event().TestProject().Status(StackStatus.Open).Date(now.AddMinutes(-i - 1)).Create(1);
+            }
 
             d.Event().TestProject().Status(StackStatus.Open).Date(now.AddDays(-20));
             d.Event().TestProject().Status(StackStatus.Fixed).Date(now.AddHours(-1));
             d.Event().FreeProject().Status(StackStatus.Open).Date(now.AddHours(-1));
         });
-        var matching = stacks.Where(s => s.OrganizationId == SampleDataService.TEST_ORG_ID && s.Status == StackStatus.Open).Take(5).ToList();
+        var matching = stacks.Where(s => s.OrganizationId is SampleDataService.TEST_ORG_ID && s.Status is StackStatus.Open).Take(5).ToList();
         var request = StackFilterRequest("stacks.change-status", "status:open", ("status", "ignored"));
 
         // Act
@@ -51,8 +117,8 @@ public partial class BulkOperationEndpointTests
         Assert.Equal(5, finished.Succeeded);
         Assert.Equal(0, finished.Failed);
         Assert.All(matching, s => Assert.Equal(StackStatus.Ignored, after[s.Id].Status));
-        Assert.Equal(StackStatus.Open, after[stacks.Single(s => s.OrganizationId == SampleDataService.FREE_ORG_ID).Id].Status);
-        Assert.Equal(StackStatus.Fixed, after[stacks.Single(s => s.Status == StackStatus.Fixed).Id].Status);
+        Assert.Equal(StackStatus.Open, after[stacks.Single(s => s.OrganizationId is SampleDataService.FREE_ORG_ID).Id].Status);
+        Assert.Equal(StackStatus.Fixed, after[stacks.Single(s => s.Status is StackStatus.Fixed).Id].Status);
     }
 
     [Fact]
@@ -146,8 +212,8 @@ public partial class BulkOperationEndpointTests
             d.Event().TestProject().Date(now.AddDays(-20));
         });
         var outside = events.Single(e => e.Date < now.AddDays(-10));
-        var single = stacks.First(s => s.Id != outside.StackId);
-        var matching = stacks.Where(s => s.Id != outside.StackId && s.Id != single.Id).ToList();
+        var single = stacks.First(s => !String.Equals(s.Id, outside.StackId, StringComparison.Ordinal));
+        var matching = stacks.Where(s => !String.Equals(s.Id, outside.StackId, StringComparison.Ordinal) && !String.Equals(s.Id, single.Id, StringComparison.Ordinal)).ToList();
         var request = StackFilterRequest("stacks.delete", "");
 
         // Act
@@ -185,9 +251,9 @@ public partial class BulkOperationEndpointTests
             d.Event().TestProject().Project(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
             d.Event().FreeProject();
         });
-        var own = stacks.Single(s => s.ProjectId == SampleDataService.TEST_PROJECT_ID);
-        var otherProject = stacks.Single(s => s.ProjectId == SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
-        var foreign = stacks.Single(s => s.OrganizationId == SampleDataService.FREE_ORG_ID);
+        var own = stacks.Single(s => s.ProjectId is SampleDataService.TEST_PROJECT_ID);
+        var otherProject = stacks.Single(s => s.ProjectId is SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
+        var foreign = stacks.Single(s => s.OrganizationId is SampleDataService.FREE_ORG_ID);
 
         // Act
         var created = await CreateOperationAsync(StackIdRequest("stacks.delete", [own.Id, otherProject.Id, foreign.Id]) with { ProjectId = SampleDataService.TEST_PROJECT_ID });
@@ -261,7 +327,9 @@ public partial class BulkOperationEndpointTests
 
         // Act
         foreach (var request in requests)
+        {
             await SendRequestAsync(r => r.Post().AsTestOrganizationUser().AppendPath("bulk-operations").Content(request).StatusCodeShouldBeUnprocessableEntity());
+        }
 
         // Assert
         Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.TEST_ORG_ID));
@@ -278,6 +346,16 @@ public partial class BulkOperationEndpointTests
 
         // Assert
         Assert.Empty(await _taskService.GetByOrganizationAsync(SampleDataService.FREE_ORG_ID));
+    }
+
+    private sealed class SearchNodeEventRepository(ExceptionlessElasticConfiguration configuration, AppOptions options, MiniValidationValidator validator, Uri searchNode)
+        : EventRepository(configuration, options, validator)
+    {
+        protected override async Task<SearchRequestDescriptor<PersistentEvent>> CreateSearchDescriptorAsync(IRepositoryQuery query, ICommandOptions options)
+        {
+            var search = await base.CreateSearchDescriptorAsync(query, options);
+            return search.RequestConfiguration(request => request.ForceNode(searchNode));
+        }
     }
 
     private static NewBulkOperation StackFilterRequest(string type, string filter, params (string Key, string Value)[] parameters)
@@ -322,11 +400,12 @@ public partial class BulkOperationEndpointTests
         Assert.Equal(expected.IsRegressionNotificationPending, actual.IsRegressionNotificationPending);
     }
 
-    private Task RunStackOperationAsync(string operationId, int batchSize)
+    private Task RunStackOperationAsync(string operationId, int batchSize, StackBulkSelectionResolver? stackResolver = null)
     {
-        var service = _bulkOperationService;
-        var handler = new BulkOperationWorkItemHandler(service, _taskService, [GetService<EventBulkSelectionResolver>(), GetService<StackBulkSelectionResolver>()],
-            new BulkOperationOptions { BatchSize = batchSize, RetryDelay = TimeSpan.Zero }, GetService<ILockProvider>(), TimeProvider, Log);
+        stackResolver ??= GetService<StackBulkSelectionResolver>();
+        var lockProvider = GetService<ILockProvider>();
+        var handler = new BulkOperationWorkItemHandler(_bulkOperationService, _taskService, [stackResolver],
+            new BulkOperationOptions { BatchSize = batchSize, RetryDelay = TimeSpan.Zero }, lockProvider, TimeProvider, Log);
         var workItem = new BulkOperationWorkItem { TaskId = operationId, OrganizationId = SampleDataService.TEST_ORG_ID };
         var context = new WorkItemContext(workItem, "test-job", EmptyLock.Empty, TestCancellationToken, static (_, _) => Task.CompletedTask);
 
