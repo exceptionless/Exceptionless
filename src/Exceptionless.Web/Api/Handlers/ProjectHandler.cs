@@ -565,7 +565,15 @@ public class ProjectHandler(
         if (project is null)
             return Result.NotFound("Project not found.");
 
-        return await discardedEnvironmentService.GetAsync(project.Id);
+        var discarded = await discardedEnvironmentService.GetAsync(project.Id);
+        return new ProjectDiscardedEnvironments
+        {
+            RetentionDays = DiscardedEnvironmentService.RetentionDays,
+            Environments = discarded.Environments,
+            OtherEvents = discarded.OtherEvents,
+            OtherNames = discarded.OtherNames,
+            OtherNamesCapped = discarded.OtherNamesCapped
+        };
     }
 
     private async Task<Result<ProjectEnvironmentSettings>> GetEnvironmentSettingsAsync(string id, HttpContext context)

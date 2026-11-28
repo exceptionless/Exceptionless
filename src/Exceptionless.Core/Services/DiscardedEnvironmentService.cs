@@ -102,7 +102,7 @@ public class DiscardedEnvironmentService
     /// <summary>
     /// Gets the discarded names, most discarded first, and the events from names that were not tracked.
     /// </summary>
-    public async Task<ProjectDiscardedEnvironments> GetAsync(string projectId)
+    public async Task<DiscardedEnvironmentSummary> GetAsync(string projectId)
     {
         ArgumentException.ThrowIfNullOrEmpty(projectId);
 
@@ -117,9 +117,8 @@ public class DiscardedEnvironmentService
         var tracked = await _cache.GetListAsync<string>(GetNamesKey(projectId));
         var environments = tracked.HasValue && tracked.Value.Count > 0 ? await GetTrackedAsync(projectId, tracked.Value, days) : [];
 
-        return new ProjectDiscardedEnvironments
+        return new DiscardedEnvironmentSummary
         {
-            RetentionDays = DiscardedEnvironmentService.RetentionDays,
             Environments = environments,
             OtherEvents = otherEvents,
             OtherNames = otherNameCount,
