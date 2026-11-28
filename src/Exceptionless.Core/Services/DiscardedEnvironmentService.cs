@@ -50,7 +50,7 @@ public class DiscardedEnvironmentService
                 : (String.IsNullOrEmpty(environment) ? null : environment, 1);
         }
 
-        if (groups.Count == 0)
+        if (groups.Count is 0)
             return;
 
         string namesKey = GetNamesKey(projectId);
@@ -141,7 +141,7 @@ public class DiscardedEnvironmentService
             if (count <= 0)
                 continue;
 
-            bool isUnspecified = bucket == UnspecifiedBucket;
+            bool isUnspecified = String.Equals(bucket, UnspecifiedBucket, StringComparison.Ordinal);
             string? name = null;
             if (!isUnspecified)
             {

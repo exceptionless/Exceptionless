@@ -211,7 +211,7 @@ if (ctx._source.environments != null && ctx._source.environments.removeIf(enviro
         if (notifyOtherEnvironments is { } notifyOther)
             changes["notify_other_environments"] = notifyOther;
 
-        if (changes.Count == 0)
+        if (changes.Count is 0)
             return Task.FromResult(false);
 
         changes["updated_utc"] = _timeProvider.GetUtcNow().UtcDateTime;

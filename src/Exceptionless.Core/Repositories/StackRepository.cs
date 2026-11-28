@@ -353,7 +353,7 @@ ctx._source.updated_utc = params.updatedUtc;";
 
     // A new notification is pending once per stack. A regression is pending once per fix (a stack regresses again only after it was fixed
     // again), so the fix date identifies the cycle and each cycle gets its own key.
-    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind == PendingStackNotification.Regression
+    private static string GetClaimCacheKey(Stack stack, PendingStackNotification kind) => kind is PendingStackNotification.Regression
         ? String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind), ":", stack.DateFixed?.Ticks ?? 0)
         : String.Concat("notification-claim:", stack.Id, ":", GetPendingField(kind));
 

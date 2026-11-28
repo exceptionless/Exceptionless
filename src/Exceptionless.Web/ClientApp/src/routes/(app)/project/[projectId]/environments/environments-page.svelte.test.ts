@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
     addEnvironment: vi.fn(),
     countData: undefined as unknown,
+    countFailed: false,
     countMatching: vi.fn(),
     project: undefined as unknown,
     startBulk: vi.fn(),
@@ -33,9 +34,9 @@ vi.mock('#features/events/api.svelte.ts', () => ({
         get data() {
             return mocks.countData;
         },
-        isError: false,
+        isError: mocks.countFailed,
         isLoading: false,
-        isSuccess: true
+        isSuccess: !mocks.countFailed
     }),
     getProjectMatchingEventCount: mocks.countMatching
 }));
@@ -90,6 +91,7 @@ describe('Environments page', () => {
         mocks.updateEnvironment.mockResolvedValue({});
         mocks.updateSettings.mockResolvedValue({});
         mocks.countData = observed();
+        mocks.countFailed = false;
         mocks.project = project([]);
         mocks.countMatching.mockResolvedValue(42);
         pageState.params = { projectId: 'project-id' };
@@ -152,6 +154,27 @@ describe('Environments page', () => {
         // Assert
         expect(await screen.findByText(/None of the listed environments has had events in the last 30 days/)).toBeTruthy();
         expect(mocks.updateSettings).not.toHaveBeenCalled();
+    });
+
+    it('requires confirmation before discarding when the recent activity request fails', async () => {
+        // Arrange
+        mocks.project = project([{ created_utc: '2026-11-01T00:00:00Z', name: 'staging', notify: true }]);
+        mocks.countData = undefined;
+        mocks.countFailed = true;
+        render(EnvironmentsPage);
+
+        // Act
+        await userEvent.click(screen.getByRole('radio', { name: 'Only environments in this list' }));
+
+        // Assert
+        expect(await screen.findByText(/recent activity could not be loaded/i)).toBeTruthy();
+        expect(mocks.updateSettings).not.toHaveBeenCalled();
+
+        // Act
+        await userEvent.click(screen.getByRole('button', { name: 'Discard Unlisted Environments' }));
+
+        // Assert
+        await waitFor(() => expect(mocks.updateSettings).toHaveBeenCalledWith({ discard_unlisted_environments: true }));
     });
 
     it('saves immediately when a listed environment has recent events', async () => {

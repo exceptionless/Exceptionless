@@ -89,7 +89,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         var project = await projectTask;
         if (project is null)
         {
-            if (!isInternalProject) _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {ProjectId}", payloadPath, ep.ProjectId);
+            if (!isInternalProject)
+                _logger.LogError("Unable to process EventPost {FilePath}: Unable to load project: {ProjectId}", payloadPath, ep.ProjectId);
+
             await Task.WhenAll(CompleteEntryAsync(entry, ep, _timeProvider.GetUtcNow().UtcDateTime), organizationTask);
             return JobResult.Success;
         }
@@ -176,9 +178,11 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
 
         // Keep track of the original event payload size, we can save some processing for retries in the case it was a massive batch.
-        bool isSingleEvent = events.Count == 1;
+        bool isSingleEvent = events.Count is 1;
 
-        // Discard any events over the plan limit.
+        // A post belongs to one project, and all its events should come from the same environment.
+        // The quota is applied before filtering by environment. With one slot left, [dev, prod] is trimmed to [dev].
+        // If the project discards dev, neither event is saved and the slot goes unused.
         if (eventsToProcess < events.Count)
         {
             int discarded = events.Count - eventsToProcess;
@@ -213,7 +217,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
                 if (!ctx.HasError)
                     continue;
 
-                if (!isInternalProject) _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ctx.ErrorMessage);
+                if (!isInternalProject)
+                    _logger.LogError(ctx.Exception, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ctx.ErrorMessage);
+
                 if (ctx.Exception is MiniValidatorException)
                     continue;
 
@@ -227,7 +233,9 @@ public class EventPostsJob : QueueJobBase<EventPost>
         }
         catch (Exception ex)
         {
-            if (!isInternalProject) _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+            if (!isInternalProject)
+                _logger.LogError(ex, "Error processing EventPost {QueueEntryId} {FilePath}: {Message}", entry.Id, payloadPath, ex.Message);
+
             if (ex is ArgumentException || ex is DocumentNotFoundException)
             {
                 await CompleteEntryAsync(entry, ep, createdUtc);
@@ -288,7 +296,8 @@ public class EventPostsJob : QueueJobBase<EventPost>
             catch (Exception ex)
             {
                 AppDiagnostics.PostsParseErrors.Add(1);
-                if (!isInternalProject) _logger.LogError(ex, "An error occurred while processing the EventPost {QueueEntryId}: {Message}", queueEntryId, ex.Message);
+                if (!isInternalProject)
+                    _logger.LogError(ex, "An error occurred while processing the EventPost {QueueEntryId}: {Message}", queueEntryId, ex.Message);
             }
 
             if (!isInternalProject && _logger.IsEnabled(LogLevel.Debug))

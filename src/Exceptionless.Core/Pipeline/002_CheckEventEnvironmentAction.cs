@@ -41,7 +41,7 @@ public class CheckEventEnvironmentAction : EventPipelineActionBase
             discarded.Add(ctx);
         }
 
-        if (discarded.Count == 0)
+        if (discarded.Count is 0)
             return;
 
         _logger.LogInformation("Discarding {Count} events from environments that are not listed on the project", discarded.Count);

@@ -149,6 +149,7 @@ public sealed class EventEnvironmentTests : TestWithServices
             {
                 Assert.Equal("nested", data.GetProperty("environment").GetString());
             }
+
             Assert.False(result.RootElement.TryGetProperty("environment", out _));
             Assert.Equal(serialized, reserialized);
         }

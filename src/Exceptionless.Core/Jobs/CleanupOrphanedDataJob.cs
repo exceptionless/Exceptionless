@@ -266,6 +266,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                         _logger.LogError("Error parsing duplicate signature {DuplicateSignature}", duplicateSignature.Key.ToString());
                         continue;
                     }
+
                     projectId = parts[0];
                     signature = parts[1];
 
@@ -295,10 +296,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                     }
 
                     targetStack.CreatedUtc = stacks.Documents.Min(d => d.CreatedUtc);
-                    targetStack.SetStatus(stacks.Documents.FirstOrDefault(d => d.Status != StackStatus.Open)?.Status ?? StackStatus.Open);
+                    targetStack.SetStatus(stacks.Documents.FirstOrDefault(d => d.Status is not StackStatus.Open)?.Status ?? StackStatus.Open);
                     targetStack.LastOccurrence = stacks.Documents.Max(d => d.LastOccurrence);
                     targetStack.SnoozeUntilUtc = stacks.Documents.Max(d => d.SnoozeUntilUtc);
-                    targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed); ;
+                    targetStack.DateFixed = stacks.Documents.Max(d => d.DateFixed);
                     targetStack.TotalOccurrences += duplicateStacks.Sum(d => d.TotalOccurrences);
                     targetStack.Tags.AddRange(duplicateStacks.SelectMany(d => d.Tags));
                     targetStack.References = stacks.Documents.SelectMany(d => d.References).Distinct().ToList();

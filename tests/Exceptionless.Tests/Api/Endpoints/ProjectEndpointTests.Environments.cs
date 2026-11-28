@@ -139,6 +139,7 @@ public sealed partial class ProjectEndpointTests
     {
         // Arrange
         await AddEnvironmentAsync("Staging");
+        await AddEnvironmentAsync("Staging", SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID);
 
         // Act
         var settings = await SendRequestAsAsync<ProjectEnvironmentSettings>(r => r
@@ -149,11 +150,14 @@ public sealed partial class ProjectEndpointTests
             .Content(new UpdateProjectEnvironment { Notify = false })
             .StatusCodeShouldBeOk()
         );
+        var otherProject = await _projectRepository.GetByIdAsync(SampleDataService.TEST_ROCKET_SHIP_PROJECT_ID, o => o.Cache(false));
 
         // Assert
         var listed = Assert.Single(settings!.Environments);
         Assert.Equal("Staging", listed.Name);
         Assert.False(listed.Notify);
+        Assert.NotNull(otherProject);
+        Assert.True(Assert.Single(otherProject.Environments).Notify);
     }
 
     [Fact]
@@ -264,7 +268,7 @@ public sealed partial class ProjectEndpointTests
         // Assert
         Assert.NotNull(result);
         Assert.Equal(2, result.Environments.Count);
-        var typo = Assert.Single(result.Environments, e => e.Key == "prodution");
+        var typo = Assert.Single(result.Environments, e => String.Equals(e.Key, "prodution", StringComparison.Ordinal));
         Assert.Equal("Prodution", typo.Name);
         Assert.Equal(2, typo.Count);
         Assert.NotEqual(default, typo.LastSeenUtc);
@@ -327,12 +331,12 @@ public sealed partial class ProjectEndpointTests
         Assert.Empty(project!.Environments);
     }
 
-    private Task AddEnvironmentAsync(string name)
+    private Task AddEnvironmentAsync(string name, string projectId = SampleDataService.TEST_PROJECT_ID)
     {
         return SendRequestAsync(r => r
             .AsTestOrganizationUser()
             .Post()
-            .AppendPaths("projects", SampleDataService.TEST_PROJECT_ID, EnvironmentsPath)
+            .AppendPaths("projects", projectId, EnvironmentsPath)
             .Content(new NewProjectEnvironment { Name = name })
             .StatusCodeShouldBeOk()
         );

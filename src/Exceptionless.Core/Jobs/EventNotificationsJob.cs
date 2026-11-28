@@ -68,7 +68,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         bool shouldLog = ev.ProjectId != _appOptions.InternalProjectId;
         int sent = 0;
-        if (shouldLog) _logger.LogTrace("Process notification: project={ProjectId} event={Id} stack={Stack}", ev.ProjectId, ev.Id, ev.StackId);
+        if (shouldLog)
+            _logger.LogTrace("Process notification: project={ProjectId} event={Id} stack={Stack}", ev.ProjectId, ev.Id, ev.StackId);
 
         var project = await _projectRepository.GetByIdAsync(ev.ProjectId, o => o.Cache());
         if (project is null)
@@ -76,12 +77,15 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
 
         using (_logger.BeginScope(new ExceptionlessState().Organization(project.OrganizationId).Project(project.Id)))
         {
-            if (shouldLog) _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
+            if (shouldLog)
+                _logger.LogTrace("Loaded project: name={ProjectName}", project.Name);
 
             // The pipeline only queues notifying environments, but the project settings may have changed while this was queued.
             if (!project.ShouldNotifyForEnvironment(ev.Environment))
             {
-                if (shouldLog) _logger.LogInformation("Skipping notification because the environment does not send notifications: environment={Environment}", ev.Environment);
+                if (shouldLog)
+                    _logger.LogInformation("Skipping notification because the environment does not send notifications: environment={Environment}", ev.Environment);
+
                 return JobResult.Success;
             }
 
@@ -89,7 +93,9 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             var lastTimeSentUtc = await _cache.GetAsync<DateTime>(String.Concat("notify:stack-throttle:", ev.StackId), DateTime.MinValue);
             if (wi is { TotalOccurrences: > 2, IsRegression: false, IsNew: false } && lastTimeSentUtc != DateTime.MinValue && lastTimeSentUtc > _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(-15))
             {
-                if (shouldLog) _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
+                if (shouldLog)
+                    _logger.LogInformation("Skipping message because of stack throttling: last sent={LastSentUtc} occurrences={TotalOccurrences}", lastTimeSentUtc, wi.TotalOccurrences);
+
                 return JobResult.Success;
             }
 
@@ -102,14 +108,17 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             double notificationCount = await _cache.IncrementAsync(cacheKey, 1, projectTimeWindow);
             if (notificationCount > 10 && !wi.IsRegression)
             {
-                if (shouldLog) _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
+                if (shouldLog)
+                    _logger.LogInformation("Skipping message because of project throttling: count={NotificationCount}", notificationCount);
+
                 return JobResult.Success;
             }
 
             foreach (var kv in project.NotificationSettings)
             {
                 var settings = kv.Value;
-                if (shouldLog) _logger.LogTrace("Processing notification: {Key}", kv.Key);
+                if (shouldLog)
+                    _logger.LogTrace("Processing notification: {Key}", kv.Key);
 
                 bool isCritical = ev.IsCritical();
                 bool shouldReportNewError = settings.ReportNewErrors && wi.IsNew && ev.IsError();
@@ -124,6 +133,7 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     _logger.LogTrace("Settings: new error={ReportNewErrors} critical error={ReportCriticalErrors} regression={ReportEventRegressions} new={ReportNewEvents} critical={ReportCriticalEvents}", settings.ReportNewErrors, settings.ReportCriticalErrors, settings.ReportEventRegressions, settings.ReportNewEvents, settings.ReportCriticalEvents);
                     _logger.LogTrace("Should process: new error={ShouldReportNewError} critical error={ShouldReportCriticalError} regression={ShouldReportRegression} new={ShouldReportNewEvent} critical={ShouldReportCriticalEvent}", shouldReportNewError, shouldReportCriticalError, shouldReportRegression, shouldReportNewEvent, shouldReportCriticalEvent);
                 }
+
                 var request = ev.GetRequestInfo(_serializer, _logger);
                 // check for known bots if the user has elected to not report them
                 if (shouldReport && !String.IsNullOrEmpty(request?.UserAgent))
@@ -134,7 +144,8 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     if (info is not null && info.Device.IsSpider || request.UserAgent.AnyWildcardMatches(botPatterns))
                     {
                         shouldReport = false;
-                        if (shouldLog) _logger.LogInformation("Skipping because event is from a bot {UserAgent}", request.UserAgent);
+                        if (shouldLog)
+                            _logger.LogInformation("Skipping because event is from a bot {UserAgent}", request.UserAgent);
                     }
                 }
 
@@ -149,7 +160,9 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
                     _ => await SendEmailNotificationAsync(kv.Key, project, ev, wi, shouldLog)
                 };
 
-                if (shouldLog) _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
+                if (shouldLog)
+                    _logger.LogTrace("Finished processing notification: {Key}", kv.Key);
+
                 if (processed)
                     sent++;
             }
@@ -158,9 +171,11 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
             if (sent > 0)
             {
                 await _cache.SetAsync(String.Concat("notify:stack-throttle:", ev.StackId), _timeProvider.GetUtcNow().UtcDateTime, _timeProvider.GetUtcNow().UtcDateTime.AddMinutes(15));
-                if (shouldLog) _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
+                if (shouldLog)
+                    _logger.LogInformation("Notifications sent: event={Id} stack={Stack} count={SentCount}", ev.Id, ev.StackId, sent);
             }
         }
+
         return JobResult.Success;
     }
 
@@ -169,38 +184,51 @@ public class EventNotificationsJob : QueueJobBase<EventNotification>
         var user = await _userRepository.GetByIdAsync(userId, o => o.Cache());
         if (String.IsNullOrEmpty(user?.EmailAddress))
         {
-            if (shouldLog) _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}", userId, user?.EmailAddress ?? "");
+            if (shouldLog)
+                _logger.LogError("Could not load user {UserId} or blank email address {EmailAddress}", userId, user?.EmailAddress ?? "");
+
             return false;
         }
 
         if (!user.IsEmailAddressVerified)
         {
-            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has not been verified", user.Id, user.EmailAddress);
+            if (shouldLog)
+                _logger.LogInformation("User {UserId} with email address {EmailAddress} has not been verified", user.Id, user.EmailAddress);
+
             return false;
         }
 
         if (!user.EmailNotificationsEnabled)
         {
-            if (shouldLog) _logger.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled", user.Id, user.EmailAddress);
+            if (shouldLog)
+                _logger.LogInformation("User {UserId} with email address {EmailAddress} has email notifications disabled", user.Id, user.EmailAddress);
+
             return false;
         }
 
         if (!user.OrganizationIds.Contains(project.OrganizationId))
         {
-            if (shouldLog) _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={Organization} event={Id}", project.Id, userId, project.OrganizationId, ev.Id);
+            if (shouldLog)
+                _logger.LogError("Unauthorized user: project={ProjectId} user={UserId} organization={Organization} event={Id}", project.Id, userId, project.OrganizationId, ev.Id);
+
             return false;
         }
 
-        if (shouldLog) _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
+        if (shouldLog)
+            _logger.LogTrace("Loaded user: email={EmailAddress}", user.EmailAddress);
 
         // don't send notifications in non-production mode to email addresses that are not on the outbound email list.
         if (_appOptions.AppMode != AppMode.Production && !_emailOptions.AllowedOutboundAddresses.Contains(v => user.EmailAddress.Contains(v, StringComparison.InvariantCultureIgnoreCase)))
         {
-            if (shouldLog) _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode");
+            if (shouldLog)
+                _logger.LogInformation("Skipping because email is not on the outbound list and not in production mode");
+
             return false;
         }
 
-        if (shouldLog) _logger.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
+        if (shouldLog)
+            _logger.LogTrace("Sending email to {EmailAddress}...", user.EmailAddress);
+
         return await _mailer.SendEventNoticeAsync(user, ev, project, wi.IsNew, wi.IsRegression, wi.TotalOccurrences);
     }
 }

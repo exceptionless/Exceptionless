@@ -85,7 +85,7 @@ public sealed class NotificationEnvironmentFormattingTests(ITestOutputHelper out
         Assert.DoesNotContain("channel", text);
 
         // The only real link is the event link.
-        Assert.Equal(1, message.Text.Count(c => c == '<'));
+        Assert.Equal(1, message.Text.Count(c => c is '<'));
     }
 
     private static Project CreateProject() => new()

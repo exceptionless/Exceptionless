@@ -185,7 +185,7 @@ public class BulkOperationWorkItemHandler : WorkItemHandlerBase
         catch (Exception ex) when (!IsPermanent(ex))
         {
             // Elasticsearch, cache and network hiccups: continue in a new work item from the saved counts and cursor. Rethrowing
-            // would use the queue's retries, which cover the whole work item, so an task that makes progress between errors
+            // would use the queue's retries, which cover the whole work item, so a task that makes progress between errors
             // would run out of deliveries while still marked running. After MaxTransientFailures in a row, give up.
             var failed = await _taskService.UpdateAsync(workItem.TaskId, current =>
             {

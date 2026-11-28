@@ -114,14 +114,17 @@ public class CountingMailer : IMailer
         {
             EventNoticeCalls.Clear();
         }
+
         lock (OrganizationTrialEndingCalls)
         {
             OrganizationTrialEndingCalls.Clear();
         }
+
         lock (UserEmailVerifyCalls)
         {
             UserEmailVerifyCalls.Clear();
         }
+
         ShouldThrow = false;
         OnOrganizationTrialEnding = null;
     }

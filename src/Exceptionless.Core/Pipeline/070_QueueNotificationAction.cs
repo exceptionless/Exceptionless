@@ -138,12 +138,12 @@ public class QueueNotificationAction : EventPipelineActionBase
     /// </summary>
     private async Task<bool> ClaimPendingAsync(EventContext ctx, PendingStackNotification kind)
     {
-        bool isPending = kind == PendingStackNotification.New ? ctx.Stack!.IsNewNotificationPending : ctx.Stack!.IsRegressionNotificationPending;
+        bool isPending = kind is PendingStackNotification.New ? ctx.Stack!.IsNewNotificationPending : ctx.Stack!.IsRegressionNotificationPending;
         if (!isPending)
             return false;
 
         bool claimed = await _stackRepository.TryClaimNotificationAsync(ctx.Stack, kind);
-        if (kind == PendingStackNotification.New)
+        if (kind is PendingStackNotification.New)
             ctx.Stack.IsNewNotificationPending = false;
         else
             ctx.Stack.IsRegressionNotificationPending = false;
