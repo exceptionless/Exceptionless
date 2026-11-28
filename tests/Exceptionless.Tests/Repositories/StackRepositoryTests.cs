@@ -212,13 +212,16 @@ public sealed class StackRepositoryTests : IntegrationTestsBase
         Assert.NotNull(stack);
         Assert.False(stack.Status == StackStatus.Regressed);
         Assert.NotNull(stack.DateFixed);
+        var updatedUtc = stack.UpdatedUtc;
 
+        TimeProvider.Advance(TimeSpan.FromMinutes(1));
         await _repository.MarkAsRegressedAsync(stack);
 
         stack = await _repository.GetByIdAsync(stack.Id);
         Assert.NotNull(stack);
         Assert.True(stack.Status == StackStatus.Regressed);
         Assert.NotNull(stack.DateFixed);
+        Assert.True(updatedUtc < stack.UpdatedUtc, $"Previous: {updatedUtc}, Current: {stack.UpdatedUtc}");
     }
 
     [Fact]

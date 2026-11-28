@@ -75,6 +75,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Indices(GetEventIndexPattern())
             .Size(0)
             .AddAggregation("cardinality_stack_id", a => a.Cardinality(c => c.Field(f => f.StackId).PrecisionThreshold(40000))));
+        _logger.LogRequest(stackCardinality);
 
         double? uniqueStackIdCount = stackCardinality.Aggregations?.GetCardinality("cardinality_stack_id")?.Value;
         if (!uniqueStackIdCount.HasValue || uniqueStackIdCount.Value <= 0)
@@ -95,6 +96,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Indices(GetEventIndexPattern())
                 .Size(0)
                 .AddAggregation("terms_stack_id", a => a.Terms(c => c.Field(f => f.StackId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            _logger.LogRequest(stackIdTerms);
 
             string[] stackIds = stackIdTerms.Aggregations?.GetStringTerms("terms_stack_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (stackIds.Length == 0)
@@ -114,9 +116,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             totalOrphanedEventCount += missingStackIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing stacks {MissingStackIds} out of {StackIdCount}", batchNumber, buckets, missingStackIds.Length, missingStackIds, stackIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
                 .Query(q => q.Terms(t => t.Field(f => f.StackId).Terms(new TermsQueryField(missingStackIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+            _logger.LogRequest(deleteResponse);
         }
 
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing stacks out of {StackIdCount}", totalOrphanedEventCount, totalStackIds);
@@ -129,6 +132,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Indices(GetEventIndexPattern())
             .Size(0)
             .AddAggregation("cardinality_project_id", a => a.Cardinality(c => c.Field(f => f.ProjectId).PrecisionThreshold(40000))));
+        _logger.LogRequest(projectCardinality);
 
         double? uniqueProjectIdCount = projectCardinality.Aggregations?.GetCardinality("cardinality_project_id")?.Value;
         if (!uniqueProjectIdCount.HasValue || uniqueProjectIdCount.Value <= 0)
@@ -149,6 +153,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Indices(GetEventIndexPattern())
                 .Size(0)
                 .AddAggregation("terms_project_id", a => a.Terms(c => c.Field(f => f.ProjectId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            _logger.LogRequest(projectIdTerms);
 
             string[] projectIds = projectIdTerms.Aggregations?.GetStringTerms("terms_project_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (projectIds.Length == 0)
@@ -168,9 +173,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             totalOrphanedEventCount += missingProjectIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing projects {MissingProjectIds} out of {ProjectIdCount}", batchNumber, buckets, missingProjectIds.Length, missingProjectIds, projectIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
                 .Query(q => q.Terms(t => t.Field(f => f.ProjectId).Terms(new TermsQueryField(missingProjectIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+            _logger.LogRequest(deleteResponse);
         }
 
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing projects out of {ProjectIdCount}", totalOrphanedEventCount, totalProjectIds);
@@ -183,6 +189,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
             .Indices(GetEventIndexPattern())
             .Size(0)
             .AddAggregation("cardinality_organization_id", a => a.Cardinality(c => c.Field(f => f.OrganizationId).PrecisionThreshold(40000))));
+        _logger.LogRequest(organizationCardinality);
 
         double? uniqueOrganizationIdCount = organizationCardinality.Aggregations?.GetCardinality("cardinality_organization_id")?.Value;
         if (!uniqueOrganizationIdCount.HasValue || uniqueOrganizationIdCount.Value <= 0)
@@ -203,6 +210,7 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
                 .Indices(GetEventIndexPattern())
                 .Size(0)
                 .AddAggregation("terms_organization_id", a => a.Terms(c => c.Field(f => f.OrganizationId).Include(new TermsInclude(batchNumber, buckets)).Size(batchSize * 2))));
+            _logger.LogRequest(organizationIdTerms);
 
             string[] organizationIds = organizationIdTerms.Aggregations?.GetStringTerms("terms_organization_id")?.Buckets.Select(b => b.Key.ToString()!).ToArray() ?? [];
             if (organizationIds.Length == 0)
@@ -222,9 +230,10 @@ public class CleanupOrphanedDataJob : JobWithLockBase, IHealthCheck
 
             totalOrphanedEventCount += missingOrganizationIds.Length;
             _logger.LogInformation("{BatchNumber}/{BatchCount}: Found {OrphanedEventCount} orphaned events from missing organizations {MissingOrganizationIds} out of {OrganizationIdCount}", batchNumber, buckets, missingOrganizationIds.Length, missingOrganizationIds, organizationIds.Length);
-            await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
+            var deleteResponse = await _elasticClient.DeleteByQueryAsync<PersistentEvent>(r => r
                 .Indices(GetEventIndexPattern())
                 .Query(q => q.Terms(t => t.Field(f => f.OrganizationId).Terms(new TermsQueryField(missingOrganizationIds.Select(FieldValueHelper.ToFieldValue).ToList())))));
+            _logger.LogRequest(deleteResponse);
         }
 
         _logger.LogInformation("Found {OrphanedEventCount} orphaned events from missing organizations out of {OrganizationIdCount}", totalOrphanedEventCount, totalOrganizationIds);

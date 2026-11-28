@@ -7,9 +7,11 @@ using Exceptionless.Core.Repositories.Queries;
 using Exceptionless.Core.Validation;
 using Exceptionless.DateTimeExtensions;
 using Foundatio.Repositories;
+using Foundatio.Repositories.Elasticsearch.Extensions;
 using Foundatio.Repositories.Exceptions;
 using Foundatio.Repositories.Extensions;
 using Foundatio.Repositories.Models;
+using Foundatio.Repositories.Options;
 
 namespace Exceptionless.Core.Repositories;
 
@@ -232,6 +234,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         search.Size(0).Aggregations(a => a.Add(StackIdsAggregation, new Aggregation { Composite = composite }));
 
         var response = await _client.SearchAsync<PersistentEvent>(search);
+        _logger.LogRequest(response, options.GetQueryLogLevel());
         if (!response.IsValidResponse)
             throw new DocumentException($"Error while paging stack ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
 
@@ -254,6 +257,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
             search.SearchAfter(DecodeSortValues(cursor));
 
         var response = await _client.SearchAsync<PersistentEvent>(search);
+        _logger.LogRequest(response, options.GetQueryLogLevel());
         if (!response.IsValidResponse)
             throw new DocumentException($"Error while paging event ids: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
 
@@ -273,6 +277,7 @@ public class EventRepository : RepositoryOwnedByOrganizationAndProject<Persisten
         search.Size(0).Aggregations(a => a.Add(StackCountAggregation, new Aggregation { Cardinality = new CardinalityAggregation { Field = InferField(e => e.StackId) } }));
 
         var response = await _client.SearchAsync<PersistentEvent>(search);
+        _logger.LogRequest(response, options.GetQueryLogLevel());
         if (!response.IsValidResponse)
             throw new DocumentException($"Error while counting stacks: {response.ElasticsearchServerError?.Error?.Reason ?? response.DebugInformation}", response.ApiCallDetails.OriginalException);
 
